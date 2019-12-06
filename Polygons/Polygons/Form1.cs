@@ -2,7 +2,7 @@
 using System;
 using System.Collections.Generic;
 using System.Drawing;
-using System.Threading.Tasks;
+using System.Linq;
 using System.Windows.Forms;
 
 namespace Polygons
@@ -14,7 +14,7 @@ namespace Polygons
         private readonly Random _rand = new Random();
         private readonly Timer _dynamicsTimer = new Timer { Interval = 40 };
         private int? Radius = null, Lines = null;
-
+        
         #region Init
         public Form1()
         {
@@ -26,17 +26,22 @@ namespace Polygons
 
             _dynamicsTimer.Tick += (_, __) => Refresh();
 
-            Task.Run(() =>
-            {
-                PlugInit(new Type[] { typeof(Circle) });
-                ((ToolStripMenuItem)shapeToolStripMenuItem.DropDownItems[0]).Checked = true;
-            });
+            PluginManager.MemorisePlugin(typeof(Circle));
 
-            PluginManager.Load(Environment.CurrentDirectory + @"\Plugins", "*.dll");
-            PlugInit(PluginManager.GetTypes());
+            try
+            {
+                PluginManager.LoadFromDirectory(Environment.CurrentDirectory + @"\Plugins", "*.dll");
+            }
+            catch (Exception exc)
+            {
+                MessageBox.Show(exc.Message);
+            }
+
+            PlugInit(PluginManager.GetTypes().ToArray());
+            ((ToolStripMenuItem)shapeToolStripMenuItem.DropDownItems[0]).Checked = true;
         }
 
-        private void PlugInit(IEnumerable<Type> classes)
+        private void PlugInit(params Type[] classes)
         {
             foreach (Type NewClass in classes)
             {
@@ -82,7 +87,38 @@ namespace Polygons
                 }
             }
         }
+        
+        private void Form1_DragDrop(object sender, DragEventArgs e)
+        {
+            string[] files = (string[])e.Data.GetData(DataFormats.FileDrop, false);
+            List<Type> exportedTypes = new List<Type>();
 
+            foreach (string file in files)
+            {
+                var extension = System.IO.Path.GetExtension(file);
+                if (!extension.Equals(".dll", StringComparison.CurrentCultureIgnoreCase))
+                {
+                    MessageBox.Show("Wrong Plugin: please drop .dll file!");
+                    return;
+                }
+                try
+                {
+                    exportedTypes.AddRange(PluginManager.LoadFile(file));
+                }
+                catch (Exception exc)
+                {
+                    MessageBox.Show(exc.Message);
+                }
+            }
+            PlugInit(exportedTypes.ToArray());
+        }
+
+        private void Form1_DragEnter(object sender, DragEventArgs e)
+        {
+            if (e.Data.GetDataPresent(DataFormats.FileDrop, false))
+                e.Effect = DragDropEffects.Link;
+        }
+        
         private void Form1_Paint(object sender, PaintEventArgs e)
         {
             e.Graphics.SmoothingMode = System.Drawing.Drawing2D.SmoothingMode.HighQuality;
@@ -90,6 +126,15 @@ namespace Polygons
                 _polygon.Draw(e.Graphics, Radius, Lines, _rand);
             else
                 _polygon.Draw(e.Graphics, Radius, Lines);
+            /*
+            test.Draw(e.Graphics, false, _polygon.VertexColor, _polygon.LineColor, _polygon.LineWidth, _polygon.VertexR);
+            if (!flag)
+            {
+                (p_to, p_from) = (p_from, p_to);
+                flag = true;
+                ttmp(e.Graphics);
+            }
+            */
         }
 
         private void DynamicsButton_Click(object sender, EventArgs e) // динамика
@@ -174,10 +219,8 @@ namespace Polygons
 
             shapeToolStripMenuItem.DropDownItems.Clear();
             shapeToolStripMenuItem.Checked = false;
-            PlugInit(new Type[] { typeof(Circle) });
 
-
-            PlugInit(data.FigureTypes);
+            PlugInit(((IEnumerable<Type>)data.FigureTypes).ToArray());
             ((ToolStripMenuItem)shapeToolStripMenuItem.DropDownItems[data.CheckedIndex]).Checked = true;
         }
 
