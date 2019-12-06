@@ -1,7 +1,9 @@
-﻿using System.Drawing;
+﻿using System;
+using System.Drawing;
 
 namespace Figures
 {
+    [Serializable]
     public class Rhombus : Vertex
     {
         public Rhombus(in int X, in int Y) : base(X, Y) { }
