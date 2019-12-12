@@ -1,4 +1,4 @@
-﻿namespace Polygons
+namespace Polygons
 {
     partial class Form1
     {
@@ -157,12 +157,14 @@
             // 
             // Form1
             // 
+            this.AllowDrop = true;
             this.AutoScaleDimensions = new System.Drawing.SizeF(8F, 16F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
             this.ClientSize = new System.Drawing.Size(800, 450);
             this.Controls.Add(this.dynamicsButton);
             this.Controls.Add(this.shapeMenuStrip);
             this.DoubleBuffered = true;
+            this.KeyPreview = true;
             this.MainMenuStrip = this.shapeMenuStrip;
             this.Name = "Form1";
             this.Text = "Polygons";
