@@ -1,6 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Drawing;
+using System;
 using System.Dynamic;
 using System.IO;
 using System.Runtime.Serialization.Formatters.Binary;
@@ -31,9 +29,9 @@ namespace Polygons
             };
         }
 
-        public static void Save(IMemento obj, string directory = null)
+        public static void Save(object data, string directory = null)
         {
-            if (obj == null) throw new ArgumentNullException("obj");
+            if (data == null) throw new ArgumentNullException(nameof(data));
             if (directory != null) _saveFileDialog.InitialDirectory = directory;
 
             _saveFileDialog.FileName =
@@ -43,43 +41,41 @@ namespace Polygons
                 DateTime.Now.Hour + "-" +
                 DateTime.Now.Minute + "_data";
 
-            if (_saveFileDialog.ShowDialog() == DialogResult.OK)
-            {
-                Stream SaveFileStream = File.Create(_saveFileDialog.FileName);
+            if (_saveFileDialog.ShowDialog() != DialogResult.OK) return;
 
-                _binaryFormatter.Serialize(SaveFileStream, obj);
-
-                SaveFileStream.Close();
-            }
+            using (Stream SaveFileStream = File.Create(_saveFileDialog.FileName))
+                _binaryFormatter.Serialize(SaveFileStream, data);
         }
 
-        public static IMemento Load(string directory = null)
+        public static object Load(string directory = null)
         {
             if (directory != null) _openFileDialog.InitialDirectory = directory;
 
-            IMemento memento = null;
+            object data = null;
             if (_openFileDialog.ShowDialog() == DialogResult.OK && File.Exists(_openFileDialog.FileName))
             {
-                Stream openFileStream = File.OpenRead(_openFileDialog.FileName);
-                try
+                using (Stream openFileStream = File.OpenRead(_openFileDialog.FileName))
                 {
-                    memento = (IMemento)_binaryFormatter.Deserialize(openFileStream);
+                    try
+                    {
+                        data = (IMemento)_binaryFormatter.Deserialize(openFileStream);
+                    }
+                    catch
+                    {
+                        MessageBox.Show("Unable to find a plugin!");
+                        data = null;
+                    }
                 }
-                catch
-                {
-                    MessageBox.Show("Unable to find a plugin!");
-                    memento = null;
-                }
-                openFileStream.Close();
             }
-            return memento;
+            return data;
         }
-    }
 
-    interface IOriginator
+    }
+    
+    public interface IOriginator
     {
-        void SetMemento(in IMemento data);
         IMemento CreateMemento();
+        void SetMemento(in IMemento memento);
     }
 
     public interface IMemento
@@ -87,36 +83,4 @@ namespace Polygons
         ExpandoObject GetState();
     }
 
-    [Serializable]
-    public class Form1Memento : IMemento
-    {
-
-        private readonly ConvexPolygon _polygon;
-        private readonly Type _type;
-        private readonly Color _backColor;
-        private readonly IEnumerable<Type> _figureTypes;
-        private readonly int _checkedIndex;
-
-        public Form1Memento(in ConvexPolygon polygon, in Type type, in Color backColor, in IEnumerable<Type> figureTypes, in int checkedIndex)
-        {
-            _polygon = new ConvexPolygon(polygon ?? throw new ArgumentNullException("polygon")); // ??? Надо?
-            _type = type ?? throw new ArgumentNullException("type");
-            _figureTypes = figureTypes ?? throw new ArgumentNullException("figureTypes");
-            _backColor = backColor;
-            _checkedIndex = checkedIndex;
-        }
-
-        public ExpandoObject GetState()
-        {
-            dynamic state = new ExpandoObject();
-
-            state.Polygon = new ConvexPolygon(_polygon);
-            state.Type = _type;
-            state.BackColor = _backColor;
-            state.FigureTypes = _figureTypes;
-            state.CheckedIndex = _checkedIndex;
-
-            return state;
-        }
-    }
 }
