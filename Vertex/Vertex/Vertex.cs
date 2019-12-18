@@ -12,16 +12,16 @@ namespace Figures
         public int Dx { get; set; } // for Vertex dnd
         public int Dy { get; set; } // for Vertex dnd
 
-        protected Vertex(in int X, in int Y)
+        protected Vertex(in int x, in int y)
         {
-            this.X = X;
-            this.Y = Y;
+            this.X = x;
+            this.Y = y;
         }
 
-        public abstract void Draw(in Graphics e, in bool DrawBorder, in Color VertexColor, in Color LineColor, in int LineWidth, in int R, in int DeltaX = 0, in int DeltaY = 0); // DeltaX/DeltaY - сдвиг рисунка на (DeltaX; DeltaY) относительно настоящих координат
+        public abstract void Draw(in Graphics e, in bool drawBorder, in Color vertexColor, in Color lineColor, in int lineWidth, in int r, in int deltaX = 0, in int deltaY = 0); // DeltaX/DeltaY - сдвиг рисунка на (DeltaX; DeltaY) относительно настоящих координат
 
-        public abstract bool Check(in int X, in int Y, in int R); // принадлежность точки фигуре
-        public virtual bool Check(in Point p, in int R) => Check(p.X, p.Y, R); // перегруженный метод для Point
+        public abstract bool Check(in int x, in int y, in int r); // принадлежность точки фигуре
+        public virtual bool Check(in Point p, in int r) => Check(p.X, p.Y, r); // перегруженный метод для Point
 
         public static implicit operator Point(in Vertex i) => new Point(i.X, i.Y);
     }

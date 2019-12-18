@@ -6,36 +6,36 @@ namespace Figures
     [Serializable]
     public class Rhombus : Vertex
     {
-        public Rhombus(in int X, in int Y) : base(X, Y) { }
+        public Rhombus(in int x, in int y) : base(x, y) { }
 
-        public override void Draw(in Graphics e, in bool DrawBorder, in Color VertexColor, in Color LineColor, in int LineWidth, in int R, in int DeltaX = 0, in int DeltaY = 0)
+        public override void Draw(in Graphics e, in bool drawBorder, in Color vertexColor, in Color lineColor, in int lineWidth, in int r, in int deltaX = 0, in int deltaY = 0)
         {
-            Point[] Points = new Point[]
+            Point[] points =
             {
-                new Point((X + DeltaX), Y - R + DeltaY), // up
-                new Point((X + R + DeltaX), Y + DeltaY), // right
-                new Point(X + DeltaX, Y + R + DeltaY), // down
-                new Point((X - R + DeltaX), Y + DeltaY) // left
+                new Point((X + deltaX), Y - r + deltaY), // up
+                new Point((X + r + deltaX), Y + deltaY), // right
+                new Point(X + deltaX, Y + r + deltaY), // down
+                new Point((X - r + deltaX), Y + deltaY) // left
             };
 
-            e.FillPolygon(new SolidBrush(VertexColor), Points); //right
-            if (DrawBorder) e.DrawPolygon(new Pen(LineColor, LineWidth), Points);
+            e.FillPolygon(new SolidBrush(vertexColor), points); //right
+            if (drawBorder) e.DrawPolygon(new Pen(lineColor, lineWidth), points);
         }
 
-        public override bool Check(in int X, in int Y, in int R) => Check(new Point(X, Y), R);
+        public override bool Check(in int x, in int y, in int r) => Check(new Point(x, y), r);
 
-        public override bool Check(in Point P, in int R)
+        public override bool Check(in Point point, in int r)
         {
-            bool Vector(in Point K, in Point L, in Point M) // вектор AC справа от вектора AB или лежит на нём?
+            bool Vector(in Point K, in Point L, in Point M)
             {
                 return (L.X - K.X) * (M.Y - K.Y) - (M.X - K.X) * (L.Y - K.Y) >= 0;
             }
 
-            Point A = new Point(X, Y - R); // up
-            Point B = new Point((X + R), Y); // right
-            Point C = new Point(X, Y + R); // down
-            Point D = new Point((X - R), Y); // left
-            return Vector(A, B, P) && Vector(B, C, P) && Vector(C, D, P) && Vector(D, A, P);
+            Point a = new Point(X, Y - r), // up
+                b = new Point((X + r), Y), // right
+                c = new Point(X, Y + r), // down
+                d = new Point((X - r), Y); // left
+            return Vector(a, b, point) && Vector(b, c, point) && Vector(c, d, point) && Vector(d, a, point);
         }
     }
 }

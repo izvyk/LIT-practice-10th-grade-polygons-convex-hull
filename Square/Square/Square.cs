@@ -6,17 +6,17 @@ namespace Figures
     [Serializable]
     public class Square : Vertex
     {
-        public Square(in int X, in int Y) : base(X, Y) { }
+        public Square(in int x, in int y) : base(x, y) { }
 
-        public override void Draw(in Graphics e, in bool DrawBorder, in Color VertexColor, in Color LineColor, in int LineWidth, in int R, in int DeltaX = 0, in int DeltaY = 0)
+        public override void Draw(in Graphics e, in bool drawBorder, in Color vertexColor, in Color lineColor, in int lineWidth, in int r, in int deltaX = 0, in int deltaY = 0)
         {
-            e.FillRectangle(new SolidBrush(VertexColor), X - R + DeltaX, Y - R + DeltaY, R * 2, R * 2);
-            if (DrawBorder) e.DrawRectangle(new Pen(LineColor, LineWidth), X - R + DeltaX, Y - R + DeltaY, R * 2, R * 2);
+            e.FillRectangle(new SolidBrush(vertexColor), X - r + deltaX, Y - r + deltaY, r * 2, r * 2);
+            if (drawBorder) e.DrawRectangle(new Pen(lineColor, lineWidth), X - r + deltaX, Y - r + deltaY, r * 2, r * 2);
         }
 
-        public override bool Check(in int X, in int Y, in int R)
+        public override bool Check(in int x, in int y, in int r)
         {
-            return (new Rectangle(this.X - R, this.Y - R, R * 2, R * 2)).Contains(X, Y);
+            return (new Rectangle(X - r, Y - r, r * 2, r * 2)).Contains(x, y);
         }
     }
 }

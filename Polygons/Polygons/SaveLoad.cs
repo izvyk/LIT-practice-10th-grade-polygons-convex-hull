@@ -1,6 +1,4 @@
 ﻿using System;
-using System.Collections.Generic;
-using System.Drawing;
 using System.Dynamic;
 using System.IO;
 using System.Runtime.Serialization.Formatters.Binary;
@@ -10,76 +8,74 @@ namespace Polygons
 {
     public static class SaveLoadManager
     {
-        private static readonly BinaryFormatter _binaryFormatter;
-        private static readonly SaveFileDialog _saveFileDialog;
-        private static readonly OpenFileDialog _openFileDialog;
+        private static readonly BinaryFormatter BinaryFormatter;
+        private static readonly SaveFileDialog SaveFileDialog;
+        private static readonly OpenFileDialog OpenFileDialog;
 
         static SaveLoadManager()
         {
-            _binaryFormatter = new BinaryFormatter();
+            BinaryFormatter = new BinaryFormatter();
 
-            _saveFileDialog = new SaveFileDialog
+            SaveFileDialog = new SaveFileDialog
             {
                 AddExtension = true,
+                DefaultExt = "plg",
                 CheckPathExists = true,
-                DefaultExt = "plg"
+                OverwritePrompt = true
             };
 
-            _openFileDialog = new OpenFileDialog
+            OpenFileDialog = new OpenFileDialog
             {
-                Filter = "plg files (*.plg)|*.plg|All files (*.*)|*.*"
+                Filter = @"plg files (*.plg)|*.plg|All files (*.*)|*.*",
+                CheckPathExists = true,
+                CheckFileExists = true,
+                Multiselect = false,
+                Title = @"Save as..."
             };
         }
 
-        public static void Save(IMemento obj, string directory = null)
+        public static void SetSaveInitialDirectory(in string directory)
         {
-            if (obj == null) throw new ArgumentNullException("obj");
-            if (directory != null) _saveFileDialog.InitialDirectory = directory;
+            if (directory?.Length > 0)
+                SaveFileDialog.InitialDirectory = directory;
+        }
 
-            _saveFileDialog.FileName =
+        public static void SetOpenInitialDirectory(in string directory)
+        {
+            if (directory?.Length > 0)
+                OpenFileDialog.InitialDirectory = directory;
+        }
+
+        public static void Save(params object[] data)
+        {
+            if (data is null || data.Length == 0) throw new ArgumentNullException(nameof(data));
+
+            SaveFileDialog.FileName =
                 DateTime.Now.Year + "-" +
                 DateTime.Now.Month + "-" +
                 DateTime.Now.Day + "_" +
                 DateTime.Now.Hour + "-" +
                 DateTime.Now.Minute + "_data";
 
-            if (_saveFileDialog.ShowDialog() == DialogResult.OK)
-            {
-                Stream SaveFileStream = File.Create(_saveFileDialog.FileName);
+            if (SaveFileDialog.ShowDialog() != DialogResult.OK) return;
 
-                _binaryFormatter.Serialize(SaveFileStream, obj);
-
-                SaveFileStream.Close();
-            }
+            using Stream SaveFileStream = File.Create(SaveFileDialog.FileName);
+            BinaryFormatter.Serialize(SaveFileStream, data);
         }
 
-        public static IMemento Load(string directory = null)
+        public static object[] Load()
         {
-            if (directory != null) _openFileDialog.InitialDirectory = directory;
-
-            IMemento memento = null;
-            if (_openFileDialog.ShowDialog() == DialogResult.OK && File.Exists(_openFileDialog.FileName))
-            {
-                Stream openFileStream = File.OpenRead(_openFileDialog.FileName);
-                try
-                {
-                    memento = (IMemento)_binaryFormatter.Deserialize(openFileStream);
-                }
-                catch
-                {
-                    MessageBox.Show("Unable to find a plugin!");
-                    memento = null;
-                }
-                openFileStream.Close();
-            }
-            return memento;
+            if (OpenFileDialog.ShowDialog() != DialogResult.OK || !File.Exists(OpenFileDialog.FileName)) return null;
+            using Stream openFileStream = File.OpenRead(OpenFileDialog.FileName);
+            return BinaryFormatter.Deserialize(openFileStream) as object[] ?? throw new DllNotFoundException();
         }
-    }
 
-    interface IOriginator
+    }
+    
+    public interface IOriginator
     {
-        void SetMemento(in IMemento data);
         IMemento CreateMemento();
+        void SetMemento(in IMemento memento);
     }
 
     public interface IMemento
@@ -87,36 +83,4 @@ namespace Polygons
         ExpandoObject GetState();
     }
 
-    [Serializable]
-    public class Form1Memento : IMemento
-    {
-
-        private readonly ConvexPolygon _polygon;
-        private readonly Type _type;
-        private readonly Color _backColor;
-        private readonly IEnumerable<Type> _figureTypes;
-        private readonly int _checkedIndex;
-
-        public Form1Memento(in ConvexPolygon polygon, in Type type, in Color backColor, in IEnumerable<Type> figureTypes, in int checkedIndex)
-        {
-            _polygon = new ConvexPolygon(polygon ?? throw new ArgumentNullException("polygon")); // ??? Надо?
-            _type = type ?? throw new ArgumentNullException("type");
-            _figureTypes = figureTypes ?? throw new ArgumentNullException("figureTypes");
-            _backColor = backColor;
-            _checkedIndex = checkedIndex;
-        }
-
-        public ExpandoObject GetState()
-        {
-            dynamic state = new ExpandoObject();
-
-            state.Polygon = new ConvexPolygon(_polygon);
-            state.Type = _type;
-            state.BackColor = _backColor;
-            state.FigureTypes = _figureTypes;
-            state.CheckedIndex = _checkedIndex;
-
-            return state;
-        }
-    }
 }

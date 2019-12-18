@@ -6,19 +6,20 @@ namespace Figures
     [Serializable]
     public class Circle : Vertex
     {
-        public Circle(in int X, in int Y) : base(X, Y) { }
+        public Circle(in int x, in int y) : base(x, y) { }
 
-        public override void Draw(in Graphics e, in bool DrawBorder, in Color VertexColor, in Color LineColor, in int LineWidth, in int R, in int DeltaX = 0, in int DeltaY = 0)
+        public override void Draw(in Graphics e, in bool drawBorder, in Color vertexColor, in Color lineColor, in int lineWidth, in int r, in int deltaX = 0, in int deltaY = 0)
         {
-            e.FillEllipse(new SolidBrush(VertexColor), new Rectangle(X - R + DeltaX, Y - R + DeltaY, R * 2, R * 2));
-            if (DrawBorder) e.DrawEllipse(new Pen(LineColor, LineWidth), new Rectangle(X - R + DeltaX, Y - R + DeltaY, R * 2, R * 2));
+            e.FillEllipse(new SolidBrush(vertexColor), new Rectangle(X - r + deltaX, Y - r + deltaY, r * 2, r * 2));
+            if (drawBorder) e.DrawEllipse(new Pen(lineColor, lineWidth), new Rectangle(X - r + deltaX, Y - r + deltaY, r * 2, r * 2));
         }
 
-        public override bool Check(in int X, in int Y, in int R)
+        public override bool Check(in int x, in int y, in int r)
         {
-            return (Math.Pow(this.X - X, 2) +
-            Math.Pow(this.Y - Y, 2) <=
-            Math.Pow(R, 2));
+            return
+                Math.Pow(X - x, 2) +
+                Math.Pow(Y - y, 2) <=
+                Math.Pow(r, 2);
         }
     }
 }
