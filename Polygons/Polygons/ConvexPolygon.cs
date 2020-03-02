@@ -180,7 +180,7 @@ namespace Polygons
     }
 
     [Serializable]
-    public class PolygonMemento : IMemento, IEquatable<PolygonMemento>
+    public class PolygonMemento : IMemento
     {
         private readonly Color _vertexColor;
         private readonly Color _lineColor;
@@ -194,50 +194,8 @@ namespace Polygons
             _lineColor = lineColor;
             _lineWidth = lineWidth;
             _vertexRadius = vertexRadius;
-            _vertices = vertices.AsReadOnly();
+            _vertices = vertices?.AsReadOnly() ?? throw new ArgumentNullException(nameof(vertices));
         }
-
-        #region Overrides
-        public static bool operator ==(PolygonMemento left, PolygonMemento right)
-        {
-            if (left is null) throw new ArgumentNullException(nameof(left));
-            if (right is null) throw new ArgumentNullException(nameof(right));
-
-            return left.Equals(right);
-        }
-
-        public static bool operator !=(PolygonMemento left, PolygonMemento right)
-        {
-            return !(left == right);
-        }
-
-        public override bool Equals(object other)
-        {
-            return Equals(other as PolygonMemento);
-        }
-
-        public override int GetHashCode()
-        {
-            int hash = 13;
-            hash = hash * 7 + _vertexColor.GetHashCode();
-            hash = hash * 7 + _lineColor.GetHashCode();
-            hash = hash * 7 + _lineWidth.GetHashCode();
-            hash = hash * 7 + _vertexRadius.GetHashCode();
-            hash = hash * 7 + _vertices.GetHashCode();
-            return hash;
-        }
-
-        public bool Equals(PolygonMemento other)
-        {
-            if (other is null) throw new ArgumentNullException(nameof(other));
-            return
-                _vertexColor == other._vertexColor &&
-                _lineColor == other._lineColor &&
-                _lineWidth == other._lineWidth &&
-                _vertexRadius == other._vertexRadius &&
-                _vertices.SequenceEqual(other._vertices);
-        }
-        #endregion
 
         public ExpandoObject GetState()
         {

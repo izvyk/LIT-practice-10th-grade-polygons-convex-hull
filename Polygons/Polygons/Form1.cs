@@ -12,32 +12,134 @@ using System.Windows.Forms;
 
 namespace Polygons
 {
-    public partial class Form1 : Form, IOriginator
+    public partial class MainControl : Form, IOriginator
     {
         private Type _newFigureShape = typeof(Circle);
         private readonly ConvexPolygon _polygon = new ConvexPolygon();
         private readonly Random _rand = new Random();
         private readonly Timer _dynamicsTimer = new Timer { Interval = 40 };
-        private readonly List<Type> _pluginList = new List<Type> { typeof(Circle) };
+        private readonly List<Type> _pluginList = new List<Type>();
+        private readonly Form _verticesResizeForm, _linesResizeForm;
         
         #region Init
-        public Form1()
+        public MainControl()
         {
             InitializeComponent();
 
+            _verticesResizeForm = InitVerticesResizeForm();
+            _linesResizeForm = InitLinesResizeForm();
+
             _dynamicsTimer.Tick += (_, __) => Invalidate();
+
+            PlugInit(typeof(Circle));
+            ((ToolStripMenuItem) shapeToolStripMenuItem.DropDownItems[0]).Checked = true;
 
             try
             {
-                PluginManager.LoadFromDirectory(Environment.CurrentDirectory + @"\Plugins", "*.dll");
+                PlugInit(PluginManager.LoadFromDirectory(Environment.CurrentDirectory + @"\Plugins", "*.dll").Distinct().ToArray());
             }
             catch (Exception exception)
             {
                 MessageBox.Show(exception.Message);
             }
 
-            PlugInit(_pluginList.ToArray());
-            ((ToolStripMenuItem) shapeToolStripMenuItem.DropDownItems[0]).Checked = true;
+        }
+
+        private Form InitVerticesResizeForm()
+        {
+            int originalVertexRadius = _polygon.VertexRadius;
+            var ResizeBar = new TrackBar
+            {
+                Name = "ResizeBar", // Todo: remove?
+                Minimum = 5,
+                Maximum = 150,
+                Value = _polygon.VertexRadius,
+                Orientation = Orientation.Horizontal,
+                TickStyle = TickStyle.None,
+                Location = new Point(0, 0),
+                Width = 400
+            };
+            ResizeBar.Scroll += (_, __) => { _polygon.VertexRadius = ResizeBar.Value; Invalidate(); };
+            ResizeBar.MouseDown += (_, __) => originalVertexRadius = _polygon.VertexRadius;
+            ResizeBar.MouseUp += (_, __) =>
+            {
+                if (ResizeBar.Value != originalVertexRadius)
+                    HistoryManager.Add(new VertexRadiusChanged(_polygon, originalVertexRadius, ResizeBar.Value));
+            };
+
+            var SizeForm = new Form
+            {
+                ClientSize = new Size(ResizeBar.Width, ResizeBar.Height),
+                FormBorderStyle = FormBorderStyle.FixedSingle,
+                Text = "Vertices Radius Changer",
+                MinimizeBox = false,
+                MaximizeBox = false,
+                Visible = false,
+                KeyPreview = true
+            };
+            SizeForm.Controls.Add(ResizeBar);
+            SizeForm.KeyDown += Form1_KeyDown;
+            SizeForm.FormClosing += (_, e) =>
+            {
+                if (e.CloseReason == CloseReason.UserClosing)
+                {
+                    e.Cancel = true;
+                    Hide();
+                }
+            };
+            SizeForm.VisibleChanged += (_, __) => ResizeBar.Value = _polygon.VertexRadius;
+
+            return SizeForm;
+        }
+
+        private Form InitLinesResizeForm()
+        {
+
+            var originalLineWidth = _polygon.LineWidth;
+            var ResizeBar = new TrackBar
+            {
+
+                Name = "ResizeBar", // Todo: remove?
+                Minimum = 1,
+                Maximum = 60,
+                Value = _polygon.LineWidth,
+                Orientation = Orientation.Horizontal,
+                TickStyle = TickStyle.None,
+                Location = new Point(0, 0),
+                Width = 400,
+
+            };
+            ResizeBar.Scroll += (_, __) => { _polygon.LineWidth = ResizeBar.Value; Invalidate(); };
+            ResizeBar.MouseDown += (_, __) => originalLineWidth = _polygon.LineWidth;
+            ResizeBar.MouseUp += (_, __) =>
+            {
+                if (ResizeBar.Value != originalLineWidth)
+                    HistoryManager.Add(new LineWidthChanged(_polygon, originalLineWidth, ResizeBar.Value));
+            };
+
+            var SizeForm = new Form
+            {
+                ClientSize = new Size(ResizeBar.Width, ResizeBar.Height),
+                FormBorderStyle = FormBorderStyle.FixedSingle,
+                Text = "Hull Thickness Changer", // Todo: replace with "Lines ..."
+                MinimizeBox = false,
+                MaximizeBox = false,
+                Visible = false,
+                KeyPreview = true
+            };
+            SizeForm.Controls.Add(ResizeBar);
+            SizeForm.KeyDown += Form1_KeyDown;
+            SizeForm.FormClosing += (_, e) =>
+            {
+                if (e.CloseReason == CloseReason.UserClosing)
+                {
+                    e.Cancel = true;
+                    Hide();
+                }
+            };
+            SizeForm.VisibleChanged += (_, __) => ResizeBar.Value = _polygon.LineWidth;
+
+            return SizeForm;
         }
 
         private ToolStripMenuItem CreateMenuItem(Type type)
@@ -75,8 +177,14 @@ namespace Polygons
 
         private void PlugInit(params Type[] classes)
         {
-            foreach (var newClass in classes)
-                shapeToolStripMenuItem.DropDownItems.Add(CreateMenuItem(newClass));
+            foreach (var newClass in classes.Distinct())
+            {
+                if (!_pluginList.Contains(newClass))
+                {
+                    _pluginList.Add(newClass);
+                    shapeToolStripMenuItem.DropDownItems.Add(CreateMenuItem(newClass));
+                }
+            }
         }
         #endregion
 
@@ -86,10 +194,10 @@ namespace Polygons
             _dynamicsTimer.Dispose();
             Application.Exit();
         }
-
+        // Todo: cansel Dnd on Esc
         private void Form1_KeyDown(object sender, KeyEventArgs e)
         {
-            if (e.Control && e.KeyCode == Keys.Z)
+            if (e.Control && e.KeyCode == Keys.Z && !DragAndDropManager.Dropping)
             {
                 if (e.Shift && HistoryManager.RedoCount > 0)
                     HistoryManager.Redo();
@@ -100,7 +208,7 @@ namespace Polygons
             }
         }
 
-        private void Form1_DragDrop(object sender, DragEventArgs e)
+        private void Form1_DragDrop(object sender, DragEventArgs e) // Todo: add folder drop
         {
             var files = e.Data.GetData(DataFormats.FileDrop, false) as string[] ?? throw new Exception();
             var exportedTypes = new List<Type>();
@@ -192,7 +300,7 @@ namespace Polygons
         private void Form1_MouseMove(object sender, MouseEventArgs e)
         {
             if (!DragAndDropManager.Dropping) return;
-            DragAndDropManager.Tick(e.Location);
+            DragAndDropManager.Step(e.Location);
             Invalidate();
         }
 
@@ -205,11 +313,11 @@ namespace Polygons
 
             DragAndDropManager.Stop();
 
-            
-            var result = new List<ICommand>(_polygon.MakeConvex(history));
-            if (result.Count > 0)
-                HistoryManager.Add(result);
-            Todo: history
+
+            //var result = new List<ICommand>(_polygon.MakeConvex(history));
+            //if (result.Count > 0)
+            //    HistoryManager.Add(result);
+            // Todo: history
             Invalidate();
         }
 
@@ -256,7 +364,7 @@ namespace Polygons
         {
             if (memento == null) throw new ArgumentNullException(nameof(memento));
 
-            dynamic state = (memento as Form1Memento).GetState();
+            dynamic state = (memento as MainControlMemento).GetState();
             _polygon.SetMemento(state.PolygonMemento as IMemento);
             _newFigureShape = state.Type;
             BackColor = state.BackColor;
@@ -276,7 +384,7 @@ namespace Polygons
                 if ((shapeToolStripMenuItem.DropDownItems[i] as ToolStripMenuItem).Checked)
                     checkedMenuItemIndex = i;
             }
-            return new Form1Memento(_polygon.CreateMemento() as PolygonMemento, _newFigureShape, BackColor, _pluginList, checkedMenuItemIndex); //, HistoryManager.);
+            return new MainControlMemento(_polygon.CreateMemento() as PolygonMemento, _newFigureShape, BackColor, _pluginList, checkedMenuItemIndex); //, HistoryManager.);
         }
         #endregion
 
@@ -312,78 +420,12 @@ namespace Polygons
         #region Resize
         private void ResizeStripMenuVertices_Click(object sender, EventArgs e)
         {
-            var originalVertexRadius = _polygon.VertexRadius;
-            var ResizeBar = new TrackBar
-            {
-                Name = "ResizeBar", // Todo: remove?
-                Minimum = 5,
-                Maximum = 150,
-                Value = _polygon.VertexRadius,
-                Orientation = Orientation.Horizontal,
-                TickStyle = TickStyle.None,
-                Location = new Point(0, 0),
-                Width = 400
-            };
-            ResizeBar.Scroll += (_, __) => { _polygon.VertexRadius = ResizeBar.Value; Invalidate(); };
-            ResizeBar.MouseDown += (_, __) => originalVertexRadius = _polygon.VertexRadius;
-            ResizeBar.MouseUp += (_, __) =>
-            {
-                if (ResizeBar.Value != originalVertexRadius)
-                    HistoryManager.Add(new VertexRadiusChanged(_polygon, originalVertexRadius, ResizeBar.Value));
-            };
-
-            var SizeForm = new Form
-            {
-                ClientSize = new Size(ResizeBar.Width, ResizeBar.Height),
-                FormBorderStyle = FormBorderStyle.FixedSingle,
-                Text = "Vertices Radius Changer",
-                MinimizeBox = false,
-                MaximizeBox = false,
-                Visible = true,
-                KeyPreview = true
-            };
-            SizeForm.Controls.Add(ResizeBar);
-            SizeForm.KeyDown += Form1_KeyDown;
-            SizeForm.Deactivate += (_, __) => { SizeForm.Close(); SizeForm.Dispose(); };
+            _verticesResizeForm.Visible = true;
         }
 
         private void ResizeStripMenuLines_Click(object sender, EventArgs e)
         {
-            var originalLineWidth = _polygon.LineWidth;
-            var ResizeBar = new TrackBar
-            {
-
-                Name = "ResizeBar", // Todo: remove?
-                Minimum = 1,
-                Maximum = 60,
-                Value = _polygon.LineWidth,
-                Orientation = Orientation.Horizontal,
-                TickStyle = TickStyle.None,
-                Location = new Point(0, 0),
-                Width = 400,
-
-            };
-            ResizeBar.Scroll += (_, __) => { _polygon.LineWidth = ResizeBar.Value; Invalidate(); };
-            ResizeBar.MouseDown += (_, __) => originalLineWidth = _polygon.LineWidth;
-            ResizeBar.MouseUp += (_, __) =>
-            {
-                if (ResizeBar.Value != originalLineWidth)
-                    HistoryManager.Add(new LineWidthChanged(_polygon, originalLineWidth, ResizeBar.Value));
-            };
-
-            var SizeForm = new Form
-            {
-                ClientSize = new Size(ResizeBar.Width, ResizeBar.Height),
-                FormBorderStyle = FormBorderStyle.FixedSingle,
-                Text = "Hull Thickness Changer", // Todo: replace with "Lines ..."
-                MinimizeBox = false,
-                MaximizeBox = false,
-                Visible = true,
-                KeyPreview = true
-            };
-            SizeForm.Controls.Add(ResizeBar);
-            SizeForm.KeyDown += Form1_KeyDown;
-            SizeForm.Deactivate += (_, __) => { SizeForm.Close(); SizeForm.Dispose(); };
+            _linesResizeForm.Visible = true;
         }
         #endregion
         #region Save/Load
@@ -398,7 +440,7 @@ namespace Polygons
             IMemento newState = null;
             try
             {
-                newState = SaveLoadManager.Load()[0] as Form1Memento;
+                newState = SaveLoadManager.Load()[0] as MainControlMemento;
             }
             catch (DllNotFoundException)
             {
@@ -407,16 +449,16 @@ namespace Polygons
             if (newState is null || newState.Equals(prevState)) return;
 
             SetMemento(newState);
-            HistoryManager.Add(new LoadHappened(this,
-                    prevState as Form1Memento,
-                    (Form1Memento) newState));
+            HistoryManager.Add(new Load(this,
+                    prevState as MainControlMemento,
+                    newState as MainControlMemento));
         }
         #endregion
         #endregion
     }
 
     [Serializable]
-    public class Form1Memento : IMemento
+    public class MainControlMemento : IMemento
     {
         private readonly PolygonMemento _polygonMemento;
         private readonly Type _type;
@@ -424,7 +466,7 @@ namespace Polygons
         private readonly IEnumerable<Type> _figureTypes;
         private readonly int _checkedMenuItemIndex;
 
-        public Form1Memento(in PolygonMemento polygonMemento, in Type type, in Color backColor, in IEnumerable<Type> figureTypes, in int checkedMenuItemIndex)
+        public MainControlMemento(in PolygonMemento polygonMemento, in Type type, in Color backColor, in IEnumerable<Type> figureTypes, in int checkedMenuItemIndex)
         {
             _polygonMemento = polygonMemento ?? throw new ArgumentNullException(nameof(polygonMemento));
             _type = type ?? throw new ArgumentNullException(nameof(type));
@@ -432,48 +474,6 @@ namespace Polygons
             _backColor = backColor;
             _checkedMenuItemIndex = checkedMenuItemIndex;
         }
-
-        #region Overrides
-        public static bool operator ==(Form1Memento left, Form1Memento right)
-        {
-            if (left is null) throw new ArgumentNullException(nameof(left));
-            if (right is null) throw new ArgumentNullException(nameof(right));
-
-            return left.Equals(right);
-        }
-
-        public static bool operator !=(Form1Memento left, Form1Memento right)
-        {
-            return !(left == right);
-        }
-
-        public override bool Equals(object other)
-        {
-            return Equals(other as Form1Memento);
-        }
-
-        public override int GetHashCode()
-        {
-            int hash = 7;
-            hash = hash * 5 + _polygonMemento.GetHashCode();
-            hash = hash * 5 + _type.GetHashCode();
-            hash = hash * 5 + _backColor.GetHashCode();
-            hash = hash * 5 + _figureTypes.GetHashCode();
-            hash = hash * 5 + _checkedMenuItemIndex.GetHashCode();
-            return hash;
-        }
-
-        public bool Equals(Form1Memento other)
-        {
-            if (other is null) throw new ArgumentNullException(nameof(other));
-            return
-                _polygonMemento == other._polygonMemento &&
-                _type == other._type &&
-                _backColor == other._backColor &&
-                _checkedMenuItemIndex == other._checkedMenuItemIndex &&
-                _figureTypes.SequenceEqual(other._figureTypes);
-        }
-        #endregion
 
         public ExpandoObject GetState()
         {

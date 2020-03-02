@@ -1,0 +1,32 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project version="4">
+  <component name="ContentModelStore">
+    <e p="C:\Users\phili\.Rider2019.3\system\extResources" t="IncludeRecursive" />
+    <e p="C:\Users\phili\.Rider2019.3\system\resharper-host\local\Transient\ReSharperHost\v193\SolutionCaches\_.19.00" t="ExcludeRecursive" />
+    <e p="D:\Studies\Informatics\ТПП\Polygons_final\Polygons_original\Polygons" t="IncludeRecursive">
+      <e p="Action.cs" t="Include" />
+      <e p="App.config" t="Include" />
+      <e p="bin" t="ExcludeRecursive" />
+      <e p="ConvexPolygon.cs" t="Include" />
+      <e p="DragAndDropManager.cs" t="Include" />
+      <e p="Figures.cs" t="Include" />
+      <e p="Form1.cs" t="Include" />
+      <e p="Form1.Designer.cs" t="Include" />
+      <e p="Form1.resx" t="Include" />
+      <e p="obj" t="ExcludeRecursive" />
+      <e p="packages" t="ExcludeRecursive" />
+      <e p="packages.config" t="Include" />
+      <e p="PluginManager.cs" t="Include" />
+      <e p="Polygons.csproj" t="IncludeRecursive" />
+      <e p="Program.cs" t="Include" />
+      <e p="Properties" t="Include">
+        <e p="AssemblyInfo.cs" t="Include" />
+        <e p="Resources.Designer.cs" t="Include" />
+        <e p="Resources.resx" t="Include" />
+        <e p="Settings.Designer.cs" t="Include" />
+        <e p="Settings.settings" t="Include" />
+      </e>
+      <e p="SaveLoad.cs" t="Include" />
+    </e>
+  </component>
+</project>

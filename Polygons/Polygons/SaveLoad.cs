@@ -36,17 +36,17 @@ namespace Polygons
 
         public static void SetSaveInitialDirectory(in string directory)
         {
-            if (directory?.Length > 0)
-                SaveFileDialog.InitialDirectory = directory;
+            if (string.IsNullOrEmpty(directory)) throw new ArgumentException(nameof(directory));
+            SaveFileDialog.InitialDirectory = directory;
         }
 
         public static void SetOpenInitialDirectory(in string directory)
         {
-            if (directory?.Length > 0)
-                OpenFileDialog.InitialDirectory = directory;
+            if (string.IsNullOrEmpty(directory)) throw new ArgumentException(nameof(directory));
+            OpenFileDialog.InitialDirectory = directory;
         }
 
-        public static void Save(params object[] data)
+        public static void Save(params IMemento[] data)
         {
             if (data is null || data.Length == 0) throw new ArgumentNullException(nameof(data));
 
@@ -63,11 +63,11 @@ namespace Polygons
             BinaryFormatter.Serialize(SaveFileStream, data);
         }
 
-        public static object[] Load()
+        public static IMemento[] Load()
         {
             if (OpenFileDialog.ShowDialog() != DialogResult.OK || !File.Exists(OpenFileDialog.FileName)) return null;
             using Stream openFileStream = File.OpenRead(OpenFileDialog.FileName);
-            return BinaryFormatter.Deserialize(openFileStream) as object[] ?? throw new DllNotFoundException();
+            return BinaryFormatter.Deserialize(openFileStream) as IMemento[] ?? throw new DllNotFoundException();
         }
 
     }

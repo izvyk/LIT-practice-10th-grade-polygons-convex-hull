@@ -302,10 +302,10 @@ namespace Polygons
         private readonly ToolStripMenuItem _item;
         private readonly ToolStripItemCollection _parent;
 
-        public PluginAdd(in ToolStripMenuItem item, in ToolStripItemCollection where)
+        public PluginAdd(in ToolStripMenuItem item, in ToolStripItemCollection itemCollection)
         {
             _item = item ?? throw new ArgumentNullException(nameof(item));
-            _parent = where ?? throw new ArgumentNullException(nameof(where));
+            _parent = itemCollection ?? throw new ArgumentNullException(nameof(itemCollection));
         }
 
         public void Do()
@@ -319,12 +319,12 @@ namespace Polygons
         }
     }
 
-    public sealed class LoadHappened : ICommand
+    public sealed class Load : ICommand
     {
-        private readonly Form1 _form;
-        private readonly Form1Memento _prevState, _newState;
+        private readonly MainControl _form;
+        private readonly MainControlMemento _prevState, _newState;
 
-        public LoadHappened(in Form1 form, in Form1Memento prevState, in Form1Memento newState)
+        public Load(in MainControl form, in MainControlMemento prevState, in MainControlMemento newState)
         {
             _form = form ?? throw new ArgumentNullException(nameof(form));
             _prevState = prevState ?? throw new ArgumentNullException(nameof(prevState));
@@ -333,12 +333,12 @@ namespace Polygons
 
         public void Do()
         {
-            _form.SetMemento(_prevState);
+            _form.SetMemento(_newState); 
         }
 
         public void Undo()
         {
-            _form.SetMemento(_newState);
+            _form.SetMemento(_prevState);
         }
     }
     
